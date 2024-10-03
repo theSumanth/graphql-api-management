@@ -5,12 +5,15 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 const createApolloServer = require("./config/apollo");
+const isAuth = require("./middlewares/auth");
 const KEYS = require("./keys");
 
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
+
+app.use(isAuth);
 
 async function startServer() {
   await createApolloServer(app);

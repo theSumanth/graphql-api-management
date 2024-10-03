@@ -7,10 +7,18 @@ const createApolloServer = async (app) => {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
+    context: async ({ req }) => {
+      return { req };
+    },
   });
 
   await server.start();
-  app.use("/graphql", expressMiddleware(server));
+  app.use(
+    "/graphql",
+    expressMiddleware(server, {
+      context: async ({ req }) => ({ req }),
+    })
+  );
 };
 
 module.exports = createApolloServer;

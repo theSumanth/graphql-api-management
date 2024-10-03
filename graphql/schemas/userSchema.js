@@ -4,9 +4,8 @@ const { default: gql } = require("graphql-tag");
 const userSchema = gql`
   type User {
     email: String!
-    password: String!
     name: String!
-    posts: [Post]
+    posts: [Post!]
     status: String!
     createdAt: String!
     updatedAt: String!

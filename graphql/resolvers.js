@@ -3,11 +3,13 @@ const userResolver = require("./resolvers/userResolver");
 
 const resolvers = {
   Query: {
-    ...feedResolver.Query,
+    getPosts: feedResolver.getPosts,
+    getPost: feedResolver.getPost,
   },
   Mutation: {
-    ...feedResolver.Mutation,
-    ...userResolver.Mutation,
+    addPost: feedResolver.addPost,
+    signIn: userResolver.signIn,
+    logIn: userResolver.logIn,
   },
 };
 

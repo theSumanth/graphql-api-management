@@ -3,7 +3,7 @@ const { default: gql } = require("graphql-tag");
 // prettier-ignore
 const postSchema = gql`
   type Post {
-    id: ID!
+    _id: ID!
     title: String!
     content: String!
     imageUrl: String!
@@ -12,27 +12,41 @@ const postSchema = gql`
     updatedAt: String!
   }
 
-  interface MutationResponse {
+  interface Response {
     code: Int!
     success: Boolean!
     message: String!
   }
 
-  type AddPostMutationResponse implements MutationResponse {
+  type getPostsQueryResponse implements Response {
     code: Int!
     success: Boolean!
     message: String!
-    post: Post!
+    posts: [Post!]
+    totalItems: Int!
+  }
+
+  type getPostQueryResponse implements Response {
+    code: Int!
+    success: Boolean!
+    message: String!
+    post: Post
+  }
+
+  type AddPostMutationResponse implements Response {
+    code: Int!
+    success: Boolean!
+    message: String!
+    post: Post
   }
 
   type Query {
-    getPosts(page: Int!): [Post!]!
-    getPost(id: ID!): Post!
+    getPosts(page: Int!): getPostsQueryResponse!
+    getPost(postId: ID!): getPostQueryResponse!
   }
 
-
   type Mutation {
-    addPost(title: String!, content: String!, imageUrl: String!, creator: ID!): AddPostMutationResponse
+    addPost(title: String!, content: String!, imageUrl: String!, creator: ID!): AddPostMutationResponse!
   }
 `;
 
