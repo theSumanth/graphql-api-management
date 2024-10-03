@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -14,6 +15,8 @@ app.use(bodyParser.json());
 async function startServer() {
   await createApolloServer(app);
 
+  await mongoose.connect(KEYS.MONGODB_CONNECTION_URI);
+  console.log("connected to the database");
   app.listen(KEYS.PORT, () => {
     console.log(`listening to port ${KEYS.PORT}`);
   });
