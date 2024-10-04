@@ -18,7 +18,13 @@ const postSchema = gql`
     message: String!
   }
 
-  type getPostsQueryResponse implements Response {
+  type Query_And_MutationResponse implements Response {
+    code: Int!
+    success: Boolean!
+    message: String!
+  }
+
+  type GetPosts_QueryResponse implements Response {
     code: Int!
     success: Boolean!
     message: String!
@@ -26,27 +32,29 @@ const postSchema = gql`
     totalItems: Int!
   }
 
-  type getPostQueryResponse implements Response {
+  type GetPost_QueryResponse implements Response {
     code: Int!
     success: Boolean!
     message: String!
-    post: Post
+    post: Post!
   }
 
-  type AddPostMutationResponse implements Response {
+  type Add_Update_Post_MutationResponse implements Response {
     code: Int!
     success: Boolean!
     message: String!
-    post: Post
+    post: Post!
   }
 
   type Query {
-    getPosts(page: Int!): getPostsQueryResponse!
-    getPost(postId: ID!): getPostQueryResponse!
+    getPosts(page: Int!): GetPosts_QueryResponse!
+    getPost(postId: ID!): GetPost_QueryResponse!
   }
 
   type Mutation {
-    addPost(title: String!, content: String!, imageUrl: String!, creator: ID!): AddPostMutationResponse!
+    addPost(title: String!, content: String!, imageUrl: String!): Add_Update_Post_MutationResponse!
+    deletePost(postId: ID!): Query_And_MutationResponse!
+    updatePost(postId: ID!, title: String!, content: String!, imageUrl: String!): Add_Update_Post_MutationResponse!
   }
 `;
 

@@ -8,6 +8,8 @@ const resolvers = {
   },
   Mutation: {
     addPost: feedResolver.addPost,
+    deletePost: feedResolver.deletePost,
+    updatePost: feedResolver.updatePost,
     signIn: userResolver.signIn,
     logIn: userResolver.logIn,
   },

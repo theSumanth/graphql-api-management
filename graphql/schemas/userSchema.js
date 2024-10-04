@@ -17,24 +17,24 @@ const userSchema = gql`
     message: String!
   }
 
-  type SignInUserMutationResponse implements MutationResponse {
+  type SignInUser_MutationResponse implements MutationResponse {
     code: Int!
     success: Boolean!
     message: String!
-    user: User
+    user: User!
   }
   
-  type LogInUserMutationResponse implements MutationResponse {
+  type LogInUser_MutationResponse implements MutationResponse {
     code: Int!
     success: Boolean!
     message: String!
-    token: String
-    user: User
+    token: String!
+    user: User!
   }
 
   type Mutation {
-    signIn(email: String!, password: String!, name: String!): SignInUserMutationResponse
-    logIn(email: String!, password: String!): LogInUserMutationResponse
+    signIn(email: String!, password: String!, name: String!): SignInUser_MutationResponse
+    logIn(email: String!, password: String!): LogInUser_MutationResponse
   }
 `;
 

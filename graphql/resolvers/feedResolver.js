@@ -1,15 +1,16 @@
 const Post = require("../../models/post");
 const User = require("../../models/user");
 
+const { CustomError } = require("../../util/error");
+
 exports.getPosts = async (_, args, context) => {
   try {
     const { page } = args;
-    const { req } = context;
     if (!req.isAuth) {
-      const error = new Error("Not authenticated!");
-      error.code = 401;
-      throw error;
+      throw new CustomError("Not authorized!", 401);
     }
+
+    const { req } = context;
 
     const ITEMS_PER_PAGE = 2;
     if (!page) {
@@ -38,30 +39,22 @@ exports.getPosts = async (_, args, context) => {
       }),
     };
   } catch (err) {
-    return {
-      code: err.code || 500,
-      success: false,
-      message: err.message || "Failed to fetch posts!",
-    };
+    throw err;
   }
 };
 
 exports.getPost = async (_, args, context) => {
   try {
     const { req } = context;
-    const { postId } = args;
-
     if (!req.isAuth) {
-      const error = new Error("Not authorized");
-      error.code = 401;
-      throw error;
+      throw new CustomError("Not authorized", 401);
     }
+
+    const { postId } = args;
 
     const post = await Post.findById(postId).populate("creator");
     if (!post) {
-      const error = new Error("Could not find the post");
-      error.code = 404;
-      throw error;
+      throw new CustomError("Could not find the post", 404);
     }
 
     const { _id, createdAt, updatedAt } = post;
@@ -77,31 +70,31 @@ exports.getPost = async (_, args, context) => {
       },
     };
   } catch (err) {
-    return {
-      code: err.code || 500,
-      success: false,
-      message: err.message || "Failed to fetch posts!",
-    };
+    throw err;
   }
 };
 
-exports.addPost = async (_, { title, content, imageUrl, creator }, context) => {
+exports.addPost = async (_, args, context) => {
   try {
     const { req } = context;
     if (!req.isAuth) {
-      const error = new Error("Not authenticated!");
-      error.code = 401;
-      throw error;
+      throw new CustomError("Not authorized", 401);
     }
+
+    const { title, content, imageUrl } = args;
 
     const post = new Post({
       title: title,
       content: content,
       imageUrl: imageUrl,
-      creator: creator,
+      creator: req.userId,
     });
 
     const postDoc = await post.save();
+    const user = await User.findById(req.userId);
+    user.posts.push(post);
+    await user.save();
+
     const { _id, createdAt, updatedAt } = postDoc._doc;
     return {
       code: 201,
@@ -115,10 +108,81 @@ exports.addPost = async (_, { title, content, imageUrl, creator }, context) => {
       },
     };
   } catch (err) {
+    throw err;
+  }
+};
+
+exports.deletePost = async (_, args, context) => {
+  try {
+    const { req } = context;
+    if (!req.isAuth) {
+      throw new CustomError("Not authorized", 401);
+    }
+
+    const { postId } = args;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new CustomError("Could not find the post!", 404);
+    }
+    if (post.creator.toString() !== req.userId) {
+      throw new CustomError("Not authorized!", 401);
+    }
+
+    const user = await User.findById(req.userId);
+    user.posts.pull(postId);
+    await user.save();
+
+    await Post.findByIdAndDelete(postId);
     return {
-      code: err.code || 500,
-      success: false,
-      message: err.message || "Failed to add the post!",
+      code: 200,
+      success: true,
+      message: "Post deletion successfull!",
     };
+  } catch (err) {
+    throw err;
+  }
+};
+
+exports.updatePost = async (_, args, context) => {
+  try {
+    const { req } = context;
+    if (!req.isAuth) {
+      throw new CustomError("Not authorized!", 401);
+    }
+
+    const {
+      postId,
+      title: updatedTitle,
+      content: updatedContent,
+      imageUrl: updatedImageUrl,
+    } = args;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      throw new CustomError("Could not find the post!", 404);
+    }
+    if (post.creator.toString() !== req.userId) {
+      throw new CustomError("Not authorized", 401);
+    }
+
+    post.title = updatedTitle;
+    post.content = updatedContent;
+    post.imageUrl = updatedImageUrl;
+    const postDoc = await post.save();
+    const { _id, createdAt, updatedAt } = postDoc._doc;
+    return {
+      code: 201,
+      success: true,
+      message: "Post updation successfull!",
+      post: {
+        ...postDoc._doc,
+        _id: _id.toString(),
+        createdAt: createdAt.toString(),
+        updatedAt: updatedAt.toString(),
+      },
+    };
+  } catch (err) {
+    throw err;
   }
 };

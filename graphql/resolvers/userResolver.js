@@ -3,14 +3,13 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../../models/user");
 const KEYS = require("../../keys");
+const { CustomError } = require("../../util/error");
 
 exports.signIn = async (_, { email, password, name }) => {
   try {
     const existingUser = await User.findOne({ email: email });
     if (existingUser) {
-      const error = new Error("An existing user found with the email!");
-      error.code = 422;
-      throw error;
+      throw new CustomError("An existing user found with the email!", 422);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -40,11 +39,7 @@ exports.signIn = async (_, { email, password, name }) => {
       },
     };
   } catch (err) {
-    return {
-      code: err.code || 500,
-      success: false,
-      message: err.message || "Sign up failed!",
-    };
+    throw new CustomError(err.message, err.code);
   }
 };
 
@@ -52,18 +47,14 @@ exports.logIn = async (_, { email, password }) => {
   try {
     const existingUser = await User.findOne({ email: email });
     if (!existingUser) {
-      const error = new Error("No user found for the email!");
-      error.code = 422;
-      throw error;
+      throw new CustomError("No user found for the email!", 422);
     }
     const isPasswordEqual = await bcrypt.compare(
       password,
       existingUser.password
     );
     if (!isPasswordEqual) {
-      const error = new Error("Wrong email or password!");
-      error.code = 422;
-      throw error;
+      throw new CustomError("Wrong email or password!", 422);
     }
 
     const token = jwt.sign(
@@ -92,10 +83,6 @@ exports.logIn = async (_, { email, password }) => {
       },
     };
   } catch (err) {
-    return {
-      code: err.code || 500,
-      success: false,
-      message: err.message || "Failed to login",
-    };
+    throw new CustomError(err.message, err.code);
   }
 };
