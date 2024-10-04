@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../../models/user");
 const KEYS = require("../../keys");
 const { CustomError } = require("../../util/error");
+const { checkUser } = require("../../validators/validation");
 
 exports.signIn = async (_, { email, password, name }) => {
   try {
@@ -20,35 +21,29 @@ exports.signIn = async (_, { email, password, name }) => {
       name: name,
     });
     const newUserDoc = await newUser.save();
-    const {
-      _id,
-      createdAt,
-      updatedAt,
-      password: ps,
-      ...newUserWithoutPassword
-    } = newUserDoc._doc;
+    const newUserObj = newUserDoc._doc;
+    delete newUserObj.password;
+    const { _id, createdAt, updatedAt } = newUserObj;
     return {
       code: 201,
       success: true,
       message: "Sign up successful!",
       user: {
-        ...newUserWithoutPassword,
+        ...newUserObj,
         _id: _id.toString(),
         createdAt: createdAt.toString(),
         updatedAt: updatedAt.toString(),
       },
     };
   } catch (err) {
-    throw new CustomError(err.message, err.code);
+    throw new CustomError(err.message || "Could not Sign In", err.code || 500);
   }
 };
 
 exports.logIn = async (_, { email, password }) => {
   try {
     const existingUser = await User.findOne({ email: email });
-    if (!existingUser) {
-      throw new CustomError("No user found for the email!", 422);
-    }
+    checkUser(existingUser);
     const isPasswordEqual = await bcrypt.compare(
       password,
       existingUser.password
@@ -63,26 +58,22 @@ exports.logIn = async (_, { email, password }) => {
       { expiresIn: "1h" }
     );
 
-    const {
-      _id,
-      createdAt,
-      updatedAt,
-      password: ps,
-      ...existingUserWithoutPassword
-    } = existingUser.toObject();
+    const existingUserObj = existingUser.toObject();
+    delete existingUserObj.password;
+    const { _id, createdAt, updatedAt } = existingUserObj;
     return {
       code: 200,
       success: true,
       message: "Log In successfull!",
       token: token,
       user: {
-        ...existingUserWithoutPassword,
+        ...existingUserObj,
         _id: _id.toString(),
         createdAt: createdAt.toString(),
         updatedAt: updatedAt.toString(),
       },
     };
   } catch (err) {
-    throw new CustomError(err.message, err.code);
+    throw new CustomError(err.message || "Could not Log In", err.code || 500);
   }
 };

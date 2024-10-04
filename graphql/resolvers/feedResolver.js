@@ -2,15 +2,18 @@ const Post = require("../../models/post");
 const User = require("../../models/user");
 
 const { CustomError } = require("../../util/error");
+const {
+  checkAuthentication,
+  checkUserHasAccess,
+  checkUser,
+  checkPost,
+} = require("../../validators/validation");
 
 exports.getPosts = async (_, args, context) => {
   try {
-    const { page } = args;
-    if (!req.isAuth) {
-      throw new CustomError("Not authorized!", 401);
-    }
-
     const { req } = context;
+    checkAuthentication(req);
+    const { page } = args;
 
     const ITEMS_PER_PAGE = 2;
     if (!page) {
@@ -39,23 +42,21 @@ exports.getPosts = async (_, args, context) => {
       }),
     };
   } catch (err) {
-    throw err;
+    throw new CustomError(
+      err.message || "Could not fetch Posts!",
+      err.code || 500
+    );
   }
 };
 
 exports.getPost = async (_, args, context) => {
   try {
     const { req } = context;
-    if (!req.isAuth) {
-      throw new CustomError("Not authorized", 401);
-    }
-
+    checkAuthentication(req);
     const { postId } = args;
 
     const post = await Post.findById(postId).populate("creator");
-    if (!post) {
-      throw new CustomError("Could not find the post", 404);
-    }
+    checkPost(post);
 
     const { _id, createdAt, updatedAt } = post;
     return {
@@ -70,17 +71,17 @@ exports.getPost = async (_, args, context) => {
       },
     };
   } catch (err) {
-    throw err;
+    throw new CustomError(
+      err.message || "Could not fetch Post",
+      err.code || 500
+    );
   }
 };
 
 exports.addPost = async (_, args, context) => {
   try {
     const { req } = context;
-    if (!req.isAuth) {
-      throw new CustomError("Not authorized", 401);
-    }
-
+    checkAuthentication(req);
     const { title, content, imageUrl } = args;
 
     const post = new Post({
@@ -92,6 +93,7 @@ exports.addPost = async (_, args, context) => {
 
     const postDoc = await post.save();
     const user = await User.findById(req.userId);
+    checkUser(user);
     user.posts.push(post);
     await user.save();
 
@@ -108,49 +110,46 @@ exports.addPost = async (_, args, context) => {
       },
     };
   } catch (err) {
-    throw err;
+    throw new CustomError(
+      err.message || "Could not create the post",
+      err.code || 500
+    );
   }
 };
 
 exports.deletePost = async (_, args, context) => {
   try {
     const { req } = context;
-    if (!req.isAuth) {
-      throw new CustomError("Not authorized", 401);
-    }
-
+    checkAuthentication(req);
     const { postId } = args;
 
     const post = await Post.findById(postId);
-    if (!post) {
-      throw new CustomError("Could not find the post!", 404);
-    }
-    if (post.creator.toString() !== req.userId) {
-      throw new CustomError("Not authorized!", 401);
-    }
+    checkPost(post);
+    checkUserHasAccess(post, req);
+    await Post.findByIdAndDelete(postId);
 
     const user = await User.findById(req.userId);
+    checkUser(user);
     user.posts.pull(postId);
     await user.save();
 
-    await Post.findByIdAndDelete(postId);
     return {
       code: 200,
       success: true,
       message: "Post deletion successfull!",
     };
   } catch (err) {
-    throw err;
+    throw new CustomError(
+      err.message || "Could not delete the post",
+      err.code || 500
+    );
   }
 };
 
 exports.updatePost = async (_, args, context) => {
   try {
     const { req } = context;
-    if (!req.isAuth) {
-      throw new CustomError("Not authorized!", 401);
-    }
-
+    checkAuthentication(req);
     const {
       postId,
       title: updatedTitle,
@@ -159,12 +158,8 @@ exports.updatePost = async (_, args, context) => {
     } = args;
 
     const post = await Post.findById(postId);
-    if (!post) {
-      throw new CustomError("Could not find the post!", 404);
-    }
-    if (post.creator.toString() !== req.userId) {
-      throw new CustomError("Not authorized", 401);
-    }
+    checkPost(post);
+    checkUserHasAccess(post, req);
 
     post.title = updatedTitle;
     post.content = updatedContent;
@@ -183,6 +178,9 @@ exports.updatePost = async (_, args, context) => {
       },
     };
   } catch (err) {
-    throw err;
+    throw new CustomError(
+      err.message || "Could not update the post",
+      err.code || 500
+    );
   }
 };
