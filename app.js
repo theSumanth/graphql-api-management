@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require("uuid");
 const createApolloServer = require("./config/apollo");
 const isAuth = require("./middlewares/auth");
 const KEYS = require("./keys");
-const { appDir } = require("./util/file");
+const { appDir, deleteFile } = require("./util/file");
 
 const app = express();
 
@@ -43,6 +43,23 @@ app.use(
 app.use("/images", express.static(path.join(appDir, "images")));
 
 app.use(isAuth);
+
+app.put("/post-image", (req, res, next) => {
+  if (!req.isAuth) {
+    const error = new Error("Not authenticated");
+    error.code = 401;
+    throw error;
+  }
+  if (!req.file) {
+    return res.status(422).json({ message: "No image provided" });
+  }
+  if (req.body.oldPath) {
+    deleteFile(req.body.oldPath);
+  }
+
+  const filePath = req.file.path.replace("\\", "/");
+  return res.status(201).json({ message: "Image stored", filePath: filePath });
+});
 
 async function startServer() {
   await createApolloServer(app);

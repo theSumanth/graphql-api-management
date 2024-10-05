@@ -5,9 +5,15 @@ const User = require("../../models/user");
 const KEYS = require("../../keys");
 const { CustomError } = require("../../util/error");
 const { checkUser } = require("../../validators/validation");
+const userValidator = require("../../validators/user");
 
 exports.signIn = async (_, { email, password, name }) => {
   try {
+    const { error } = userValidator.validateSignIn({ email, password, name });
+    if (error) {
+      throw new CustomError(error.details[0].message, 422);
+    }
+
     const existingUser = await User.findOne({ email: email });
     if (existingUser) {
       throw new CustomError("An existing user found with the email!", 422);
@@ -31,8 +37,8 @@ exports.signIn = async (_, { email, password, name }) => {
       user: {
         ...newUserObj,
         _id: _id.toString(),
-        createdAt: createdAt.toString(),
-        updatedAt: updatedAt.toString(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       },
     };
   } catch (err) {
@@ -42,6 +48,11 @@ exports.signIn = async (_, { email, password, name }) => {
 
 exports.logIn = async (_, { email, password }) => {
   try {
+    const { error } = userValidator.validateLogIn({ email, password });
+    if (error) {
+      throw new CustomError(error.details[0].message, 422);
+    }
+
     const existingUser = await User.findOne({ email: email });
     checkUser(existingUser);
     const isPasswordEqual = await bcrypt.compare(
@@ -69,8 +80,8 @@ exports.logIn = async (_, { email, password }) => {
       user: {
         ...existingUserObj,
         _id: _id.toString(),
-        createdAt: createdAt.toString(),
-        updatedAt: updatedAt.toString(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       },
     };
   } catch (err) {

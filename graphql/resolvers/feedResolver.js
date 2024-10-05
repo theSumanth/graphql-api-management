@@ -8,6 +8,7 @@ const {
   checkUser,
   checkPost,
 } = require("../../validators/validation");
+const postValidator = require("../../validators/post");
 
 exports.getPosts = async (_, args, context) => {
   try {
@@ -36,8 +37,8 @@ exports.getPosts = async (_, args, context) => {
         return {
           ...p.toObject(),
           _id: p._id.toString(),
-          createdAt: p.createdAt.toString(),
-          updatedAt: p.updatedAt.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
         };
       }),
     };
@@ -66,8 +67,8 @@ exports.getPost = async (_, args, context) => {
       post: {
         ...post.toObject(),
         _id: _id.toString(),
-        createdAt: createdAt.toString(),
-        updatedAt: updatedAt.toString(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       },
     };
   } catch (err) {
@@ -83,6 +84,10 @@ exports.addPost = async (_, args, context) => {
     const { req } = context;
     checkAuthentication(req);
     const { title, content, imageUrl } = args;
+    const { error } = postValidator.validatePost({ title, content, imageUrl });
+    if (error) {
+      throw new CustomError(error.details[0].message, 422);
+    }
 
     const post = new Post({
       title: title,
@@ -105,8 +110,8 @@ exports.addPost = async (_, args, context) => {
       post: {
         ...postDoc._doc,
         _id: _id.toString(),
-        createdAt: createdAt.toString(),
-        updatedAt: updatedAt.toString(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       },
     };
   } catch (err) {
@@ -156,6 +161,14 @@ exports.updatePost = async (_, args, context) => {
       content: updatedContent,
       imageUrl: updatedImageUrl,
     } = args;
+    const { error } = postValidator.validatePost({
+      updatedTitle,
+      updatedContent,
+      updatedImageUrl,
+    });
+    if (error) {
+      throw new CustomError(error.details[0].message, 422);
+    }
 
     const post = await Post.findById(postId);
     checkPost(post);
@@ -173,8 +186,8 @@ exports.updatePost = async (_, args, context) => {
       post: {
         ...postDoc._doc,
         _id: _id.toString(),
-        createdAt: createdAt.toString(),
-        updatedAt: updatedAt.toString(),
+        createdAt: createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
       },
     };
   } catch (err) {
